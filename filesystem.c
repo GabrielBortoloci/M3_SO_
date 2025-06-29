@@ -1,6 +1,5 @@
 #include "filesystem.h"
-#include <string.h>
-#define MAX_FILE_SIZE (1024 * 1024) // Definindo arquivos para 1MB
+
 BTree* btree_create() {
     BTree* tree = malloc(sizeof(BTree));
     tree->root = NULL;
@@ -8,16 +7,10 @@ BTree* btree_create() {
 }
 
 TreeNode* create_txt_file(const char* name, const char* content) {
-    size_t = content_size = strlen(content);
-    if(content_size > MAX_FILE_SIZE) {
-        cout << "ERRO. Conteúdo do arquivo maior que 1MB." << endl;
-        return NULL;
-    } 
-    
     File* file = malloc(sizeof(File));
     file->name = strdup(name);
     file->content = strdup(content);
-    file->size = content_size;
+    file->size = strlen(content);
 
     TreeNode* node = malloc(sizeof(TreeNode));
     node->name = strdup(name);
