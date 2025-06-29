@@ -1,4 +1,5 @@
 #include "filesystem.h"
+#include <stdbool.h>
 
 BTree* btree_create() {
     
@@ -9,6 +10,15 @@ BTree* btree_create() {
 
 TreeNode* create_txt_file(const char* name, const char* content) {
     
+    //verificação do tamanho do arquivo
+    size_t content_size = strlen(content);
+
+    
+    if (content_size > MAX_FILE_SIZE) {
+        printf("ERRO: conteúdo do arquivo excede 1MB.\n");
+        return NULL;
+    }
+
     File* file = malloc(sizeof(File));
     file->name = strdup(name);
     file->content = strdup(content);
@@ -34,11 +44,67 @@ TreeNode* create_directory(const char* name) {
 }
 
 void delete_txt_file(BTree* tree, const char* name) {
-    printf("Arquivo '%s' deletado (simulado)\n", name);
+    if (!tree || !tree->root) {
+        printf("Árvore inválida ou vazia.\n");
+        return;
+    }
+
+    TreeNode* node = btree_search(tree, name);
+    if (!node) {
+        printf("Erro: Arquivo '%s' não encontrado.\n", name);
+        return;
+    }
+
+    if (node->type != FILE_TYPE) {
+        printf("Erro: '%s' não é um arquivo.\n", name);
+        return;
+    }
+
+    // Remove da árvore
+    btree_delete(tree, name);
+
+    // Libera memória usada pelo conteúdo do arquivo
+    free(node->data.file->content);
+    free(node->data.file);
+    free(node);
+
+    printf("Arquivo '%s' deletado com sucesso.\n", name);
+}
+
+// verifica se o diretório esta vazio
+bool directory_vazio(TreeNode* dir_node) {
+    
+    if (dir_node->type != DIRECTORY_TYPE) return false;
+    return dir_node->data.directory->tree->root->num_keys == 0;
 }
 
 void delete_directory(BTree* tree, const char* name) {
-    printf("Diretório '%s' deletado (simulado)\n", name);
+    
+    if (!tree || !tree->root) {
+        printf("Árvore inválida ou vazia.\n");
+        return;
+    }
+
+    TreeNode* node = btree_search(tree, name);
+    if (!node) {
+        printf("Erro: Diretório '%s' não encontrado.\n", name);
+        return;
+    }
+
+    if (node->type != DIRECTORY_TYPE) {
+        printf("Erro: '%s' não é um diretório.\n", name);
+        return;
+    }
+
+    if (!directory_vazio(node)) {
+        printf("Erro: Diretório '%s' não está vazio.\n", name);
+        return;
+    }
+
+    // Chama a função que faz a remoção real do nó na B-Tree
+    btree_delete(tree, name);
+
+    printf("Diretório '%s' deletado com sucesso.\n", name);
 }
 
 Directory* get_root_directory() {
@@ -231,8 +297,58 @@ void btree_insert(BTree* tree, TreeNode* k) {
     }
 }
 
+
+
+
+void btree_delete_node(BTreeNode* node, const char* name) {
+    int i = 0;
+    while (i < node->num_keys && strcmp(name, node->keys[i]->name) > 0)
+        i++;
+
+    // Caso 1: A chave está neste nó
+    if (i < node->num_keys && strcmp(name, node->keys[i]->name) == 0) {
+        TreeNode* valida = node->keys[i];
+
+        // Diretório: verifica se está vazio
+        if (valida->type == DIRECTORY_TYPE && !directory_vazio(valida)) {
+            printf("Erro: Diretório '%s' não está vazio.\n", name);
+            return;
+        }
+
+        // Remove deslocando
+        for (int j = i; j < node->num_keys - 1; j++) {
+            node->keys[j] = node->keys[j + 1];
+        }
+        node->num_keys--;
+
+        printf("%s '%s' deletado com sucesso.\n",
+               valida->type == DIRECTORY_TYPE ? "Diretório" : "Arquivo", name);
+        return;
+    }
+
+    // Caso 2: Se nó é folha e não achou a chave
+    if (node->folha) {
+        printf("Erro: '%s' não encontrado.\n", name);
+        return;
+    }
+
+    // Caso 3: Repetir busca no filho apropriado
+    btree_delete_node(node->filho[i], name);
+}
+
+
 void btree_delete(BTree* tree, const char* name) {
-    printf("Removendo: %s (simulado)\n", name);
+    if (!tree || !tree->root) {
+        printf("Erro: Árvore vazia.\n");
+        return;
+    }
+
+    btree_delete_node(tree->root, name);
+
+    // Se após deletar a raiz ficou sem chaves e tem um filho, sobe o filho como nova raiz
+    if (tree->root->num_keys == 0 && !tree->root->folha) {
+        tree->root = tree->root->filho[0];
+    }
 }
 
 

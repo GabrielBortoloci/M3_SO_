@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
+#define MAX_FILE_SIZE (1024 * 1024)
 #define BTREE_ORDER 3 // Grau mínimo (pode ser ajustado)
 
 typedef enum { FILE_TYPE, DIRECTORY_TYPE } NodeType;
@@ -47,6 +47,7 @@ BTree* btree_create();
 void split(BTreeNode* parent, int i, BTreeNode* child);
 void btree_insert(BTree* tree, TreeNode* node);
 void btree_delete(BTree* tree, const char* name);
+void btree_delete_node(BTreeNode* node, const char* name);
 TreeNode* btree_search(BTree* tree, const char* name);
 void btree_traverse(BTree* tree);
 void btree_traverse_node(BTreeNode* node);
