@@ -1,12 +1,9 @@
 #include "filesystem.h"
-#include <iostream>
-#include <fstream>
 
-using namespace std;
 
 int main() {
     // Criação do sistema de arquivos
-    Directory* root = get_root_directory();
+   Directory* root = get_root_directory();
 
     // Diretórios de segundo nível
     TreeNode* dirSO = create_directory("SO");
@@ -15,7 +12,7 @@ int main() {
     btree_insert(root->tree, dirTEST);
 
     // Arquivo em SO
-    TreeNode* file1 = create_txt_file("arquivo1.txt", "Arquivo de teste de SO.");
+    /*TreeNode* file1 = create_txt_file("arquivo1.txt", "Arquivo de teste de SO.");
     btree_insert(dirSO->data.directory->tree, file1);
 
     // Listagem
@@ -38,5 +35,5 @@ int main() {
         perror("Erro ao criar fs.img");
     }
 
-    return 0;
+    return 0;*/
 }

@@ -29,8 +29,8 @@ typedef struct TreeNode {
 typedef struct BTreeNode {
     int num_keys;
     TreeNode* keys[2 * BTREE_ORDER - 1];
-    struct BTreeNode* children[2 * BTREE_ORDER];
-    int leaf;
+    struct BTreeNode* filho[2 * BTREE_ORDER];
+    int folha;
 } BTreeNode;
 
 typedef struct BTree {
@@ -43,6 +43,7 @@ typedef struct Directory {
 
 // BTree Functions
 BTree* btree_create();
+
 void btree_insert(BTree* tree, TreeNode* node);
 void btree_delete(BTree* tree, const char* name);
 TreeNode* btree_search(BTree* tree, const char* name);
