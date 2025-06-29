@@ -44,10 +44,12 @@ typedef struct Directory {
 // BTree Functions
 BTree* btree_create();
 
+void split(BTreeNode* parent, int i, BTreeNode* child);
 void btree_insert(BTree* tree, TreeNode* node);
 void btree_delete(BTree* tree, const char* name);
 TreeNode* btree_search(BTree* tree, const char* name);
 void btree_traverse(BTree* tree);
+void btree_traverse_node(BTreeNode* node);
 
 // File/Directory creation
 TreeNode* create_txt_file(const char* name, const char* content);

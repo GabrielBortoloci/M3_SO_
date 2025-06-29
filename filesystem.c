@@ -1,12 +1,14 @@
 #include "filesystem.h"
 
 BTree* btree_create() {
+    
     BTree* tree = malloc(sizeof(BTree));
     tree->root = NULL;
     return tree;
 }
 
 TreeNode* create_txt_file(const char* name, const char* content) {
+    
     File* file = malloc(sizeof(File));
     file->name = strdup(name);
     file->content = strdup(content);
@@ -20,6 +22,7 @@ TreeNode* create_txt_file(const char* name, const char* content) {
 }
 
 TreeNode* create_directory(const char* name) {
+    
     Directory* dir = malloc(sizeof(Directory));
     dir->tree = btree_create();
 
@@ -39,6 +42,7 @@ void delete_directory(BTree* tree, const char* name) {
 }
 
 Directory* get_root_directory() {
+    
     Directory* root = malloc(sizeof(Directory));
     root->tree = btree_create();
     return root;
@@ -49,12 +53,53 @@ void change_directory(Directory** current, const char* path) {
 }
 
 void list_directory_contents(Directory* dir) {
+     
+    if (!dir || !dir->tree) {
+        printf("Diretório inválido ou vazio.\n");
+        return;
+    }
+
     printf("Conteúdo do diretório:\n");
     btree_traverse(dir->tree);
 }
 
 TreeNode* btree_search(BTree* tree, const char* name) {
-    printf("Buscando: %s (simulado)\n", name);
+    
+    if(tree == NULL || tree->root == NULL) {
+        printf("Árvore vazia.\n");
+        return NULL;
+    }
+
+    printf("Buscando: %s\n", name);
+
+    BTreeNode* current = tree->root;
+
+    while (current != NULL) {
+        int i = 0;
+
+        // Procura a primeira chave maior e igual ao nome
+        while (i < current->num_keys && strcmp(name, current->keys[i]->name) > 0) {
+            i++;
+        }
+
+        
+        // Se encontrou a chave
+        if (i < current->num_keys && strcmp(name, current->keys[i]->name) == 0) {
+            printf("\nAPALMEIRASSSS\n");
+            return current->keys[i];
+        }
+
+        // Se é folha, não encontrou
+        if (current->folha) {
+            printf("\nErro: arquivo '%s' não encontrado.\n", name);
+            printf("blau");
+            return NULL;
+        }
+
+        // Vai para o filho apropriado
+        current = current->filho[i];
+    }
+    printf("\nErro: arquivo '%s' não encontrado.\n", name);
     return NULL;
 }
 
@@ -65,7 +110,8 @@ int compare_keys(const char* key1, const char* key2) {
 
 
 //Função para dividir os nós
-void split_filho(BTreeNode* pai, int i, BTreeNode* filho_cheio) {
+void split(BTreeNode* pai, int i, BTreeNode* filho_cheio) {
+    
     int t = BTREE_ORDER;
 
     BTreeNode* novo_filho = malloc(sizeof(BTreeNode));
@@ -104,6 +150,7 @@ void split_filho(BTreeNode* pai, int i, BTreeNode* filho_cheio) {
 
 //Função para inserir em nós não cheios
 void insert_nonfull(BTreeNode* node, TreeNode* k) {
+    
     int i = node->num_keys - 1;
 
     if (node->folha) {
@@ -115,7 +162,7 @@ void insert_nonfull(BTreeNode* node, TreeNode* k) {
 
         // Verifica duplicata
         if (i >= 0 && compare_keys(k->name, node->keys[i]->name) == 0) {
-            printf("Erro: Arquivo com nome '%s' já existe.\n", k->name);
+            printf("\nErro: Arquivo com nome '%s' já existe.\n", k->name);
             return;
         }
 
@@ -130,15 +177,15 @@ void insert_nonfull(BTreeNode* node, TreeNode* k) {
 
         // Verifica duplicata no ponto atual
         if (i < node->num_keys && compare_keys(k->name, node->keys[i]->name) == 0) {
-            printf("Erro: Arquivo com nome '%s' já existe.\n", k->name);
+            printf("\nErro: Arquivo com nome '%s' já existe.\n", k->name);
             return;
         }
 
         // Se o filho estiver cheio, divide
         if (node->filho[i]->num_keys == 2 * BTREE_ORDER - 1) {
-            split_child(node, i, node->filho[i]);
+            split(node, i, node->filho[i]);
 
-            if (compare_keys(k->name, k->keys[i]->name) > 0) {
+            if (compare_keys(k->name, node->keys[i]->name) > 0) {
                 i++;
             }
         }
@@ -148,13 +195,13 @@ void insert_nonfull(BTreeNode* node, TreeNode* k) {
 }
 
 void btree_insert(BTree* tree, TreeNode* k) {
-    printf("Inserindo: %s (simulado)\n", node->name);
+    //printf("Inserindo: %s (simulado)\n", node->name);
     if (!tree->root) {
         // Cria raiz
         tree->root = malloc(sizeof(BTreeNode));
         tree->root->folha = 1;
         tree->root->num_keys = 1;
-        tree->root->keys[0] = node;
+        tree->root->keys[0] = k;
         return;
     }
 
@@ -163,7 +210,7 @@ void btree_insert(BTree* tree, TreeNode* k) {
     // Verifica duplicata na raiz
     for (int i = 0; i < root->num_keys; i++) {
         if (compare_keys(k->name, root->keys[i]->name) == 0) {
-            printf("Erro: Arquivo com nome '%s' já existe.\n", k->name);
+            printf("\nErro: Arquivo com nome '%s' já existe.\n", k->name);
             return;
         }
     }
@@ -176,7 +223,7 @@ void btree_insert(BTree* tree, TreeNode* k) {
         new_root->filho[0] = root;
         tree->root = new_root;
 
-        split_child(new_root, 0, root);
+        split(new_root, 0, root);
 
         insert_nonfull(new_root, k);
     } else {
@@ -188,6 +235,32 @@ void btree_delete(BTree* tree, const char* name) {
     printf("Removendo: %s (simulado)\n", name);
 }
 
+
+void btree_traverse_node(BTreeNode* node) {
+    if (!node) return;
+
+    for (int i = 0; i < node->num_keys; i++) {
+        // Visita filho à esquerda antes da chave
+        if (!node->folha) {
+            btree_traverse_node(node->filho[i]);
+        }
+
+        // Imprime o nome da chave (arquivo ou diretório)
+        printf("  - %s\n", node->keys[i]->name);
+
+        // (opcional) Se for diretório, poderia listar recursivamente aqui
+    }
+
+    // Visita último filho
+    if (!node->folha) {
+        btree_traverse_node(node->filho[node->num_keys]);
+    }
+}
+
 void btree_traverse(BTree* tree) {
-    printf("[Exemplo] arquivo.txt\n");
+    if (tree && tree->root) {
+        btree_traverse_node(tree->root);
+    } else {
+        printf("  [vazio]\n");
+    }
 }
