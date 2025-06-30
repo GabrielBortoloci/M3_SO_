@@ -66,7 +66,7 @@ int main() {
                     file.close();
 
                     if (tam_file.length() > MAX_CONTENT_LENGTH) {
-                        cout << "Erro: O arquivo excede o tamanho máximo permitido (1MB)." << endl;
+                        cout << "O arquivo excede o tamanho máximo permitido (1MB)." << endl;
                     } else {
                         const char* nome_ini = strrchr(path, '/');
                         if (nome_ini == NULL) {
@@ -76,7 +76,7 @@ int main() {
                         }
 
                        if (btree_search(dir_atual->tree, nome_ini) != NULL) {
-                           cout << "Erro: Já existe um arquivo ou diretório com o nome '" << nome_ini << "' neste diretório." << endl;
+                           cout << "Já existe um arquivo ou diretório com o nome '" << nome_ini << "' neste diretório." << endl;
                        } else {
                            char* content_buffer = strdup(tam_file.c_str());
                            if (content_buffer == NULL) {
@@ -105,7 +105,7 @@ int main() {
                 cout << "Digite o caminho do diretório (ex: nome_do_diretorio ou .. para voltar): ";
                 cin.getline(path, MAX_PATH_LENGTH);
 
-                change_directory(&dir_atual, path);
+                change_directory(&dir_atual, root, path);
                 break;
             }
             case 4:{ // Listar conteúdo
@@ -130,7 +130,7 @@ int main() {
                 imprime_arvore(root);
                 break;
             }
-            case 8:{ // Gerar imagem do sistema de arquivos
+            case 8:{ // Gerar arquivo fs.img
                 gera_arq_fs(root, "fs.img");
                 break;
             }

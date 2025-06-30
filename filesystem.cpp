@@ -141,12 +141,9 @@ Directory* get_root_directory() {
     return root;
 }
 
-void change_directory(Directory** current, const char* path) {
-    Directory* root = get_root_directory();
-
-    // . ou / e .. para voltar para diretorio anterior ou diretorio raiz
+void change_directory(Directory** current, Directory* root, const char* path) {
     if (strcmp(path, ".") == 0) {
-        return; 
+        return;
     } else if (strcmp(path, "..") == 0) {
         if ((*current)->parent != NULL) {
             *current = (*current)->parent;
@@ -161,44 +158,34 @@ void change_directory(Directory** current, const char* path) {
         return;
     }
 
-    // Conseguir ir para qualquer diretorio pelo caminho dele
+    Directory* temp_current;
+    char* path_copy = strdup(path);
+    char* token;
+
     if (path[0] == '/') {
-        Directory* temp_current = root;
-        char* path_copy = strdup(path);
-        char* token;
-        if (path[0] == '/') {
-            token = strtok(path_copy + 1, "/");
-        } else {
-            token = strtok(path_copy, "/");
-        }
-
-        while (token != NULL) {
-            TreeNode* target_node = btree_search(temp_current->tree, token);
-            if (target_node && target_node->type == DIRECTORY_TYPE) {
-                target_node->data.directory->parent = temp_current;
-                temp_current = target_node->data.directory;
-            } else {
-                cout << "Caminho '" << path << "' inválido ou diretório '" << token << "' não encontrado." << endl;
-                free(path_copy);
-                return;
-            }
-            token = strtok(NULL, "/");
-        }
-        *current = temp_current;
-        cout << "Mudou para o diretório: " << (*current)->name << endl;
-        free(path_copy);
-        return;
-    }
-
-    // Vai para diretorio filho
-    TreeNode* target_node = btree_search((*current)->tree, path);
-    if (target_node && target_node->type == DIRECTORY_TYPE) {
-        target_node->data.directory->parent = *current; // Set parent for the new current directory
-        *current = target_node->data.directory;
-        cout << "Mudou para o diretório: " << path << endl;
+        temp_current = root;
+        token = strtok(path_copy + 1, "/");
     } else {
-        cout << "Diretório '" << path << "' não encontrado." << endl;
+        temp_current = *current;
+        token = strtok(path_copy, "/");
     }
+
+    while (token != NULL) {
+        TreeNode* target_node = btree_search(temp_current->tree, token);
+        if (target_node && target_node->type == DIRECTORY_TYPE) {
+            target_node->data.directory->parent = temp_current;
+            temp_current = target_node->data.directory;
+        } else {
+            cout << "Caminho '" << path << "' inválido ou diretório '" << token << "' não encontrado." << endl;
+            free(path_copy);
+            return;
+        }
+        token = strtok(NULL, "/");
+    }
+
+    *current = temp_current;
+    cout << "Mudou para o diretório: " << (*current)->name << endl;
+    free(path_copy);
 }
 
 void list_directory_contents(Directory* dir) {
