@@ -21,6 +21,14 @@ BTreeNode* btree_node_create(int leaf) {
     return newNode;
 }
 
+Directory* get_root_directory() {
+    Directory* root = (Directory*)malloc(sizeof(Directory));
+    root->tree = btree_create();
+    root->parent = NULL;
+    root->name = strdup("root"); 
+    return root;
+}
+
 void btree_split_child(BTreeNode* parent, int i, BTreeNode* child) {
     BTreeNode* new_node = btree_node_create(child->leaf);
     new_node->num_keys = BTREE_ORDER - 1;
@@ -73,6 +81,28 @@ void btree_insert_non_full(BTreeNode* node, TreeNode* key) {
     }
 }
 
+void btree_insert(BTree* tree, TreeNode* node) {
+    if (tree->root == NULL) {
+        tree->root = btree_node_create(1);
+        tree->root->keys[0] = node;
+        tree->root->num_keys = 1;
+    } else {
+        if (tree->root->num_keys == 2 * BTREE_ORDER - 1) {
+            BTreeNode* s = btree_node_create(0);
+            s->children[0] = tree->root;
+            btree_split_child(s, 0, tree->root);
+            int i = 0;
+            if (strcmp(node->name, s->keys[0]->name) > 0) {
+                i++;
+            }
+            btree_insert_non_full(s->children[i], node);
+            tree->root = s;
+        } else {
+            btree_insert_non_full(tree->root, node);
+        }
+    }
+}
+
 TreeNode* create_txt_file(const char* name, const char* content) {
     File* file = (File*)malloc(sizeof(File));
     file->name = strdup(name);
@@ -99,100 +129,6 @@ TreeNode* create_directory(const char* name) {
     return node;
 }
 
-void delete_txt_file(BTree* tree, const char* name) {
-    TreeNode* no = btree_search(tree, name);
-    if (no && no->type == FILE_TYPE) {
-        btree_delete(tree, name);
-        free(no->data.file->name);
-        free(no->data.file->content);
-        free(no->data.file);
-        free(no->name);
-        free(no);
-        cout << "Arquivo '" << name << "' deletado com sucesso.\n";
-    } else {
-        cout << "Arquivo '" << name << "' não encontrado ou não é um arquivo.\n";
-    }
-}
-
-void delete_directory(BTree* tree, const char* name) {
-    TreeNode* no = btree_search(tree, name);
-    if (no && no->type == DIRECTORY_TYPE) {
-        if (no->data.directory->tree->root == NULL || no->data.directory->tree->root->num_keys == 0) {
-            btree_delete(tree, name);
-
-            free(no->data.directory->tree);
-            free(no->data.directory);
-            free(no->name);
-            free(no);
-            cout << "Diretório '" << name << "' deletado com sucesso.\n";
-        } else {
-            cout << "Diretório '" << name << "' não está vazio e não pode ser deletado.\n";
-        }
-    } else {
-        cout << "Diretório '" << name << "' não encontrado ou não é um diretório.\n";
-    }
-}
-
-Directory* get_root_directory() {
-    Directory* root = (Directory*)malloc(sizeof(Directory));
-    root->tree = btree_create();
-    root->parent = NULL;
-    root->name = strdup("root"); 
-    return root;
-}
-
-void change_directory(Directory** current, Directory* root, const char* path) {
-    if (strcmp(path, ".") == 0) {
-        return;
-    } else if (strcmp(path, "..") == 0) {
-        if ((*current)->parent != NULL) {
-            *current = (*current)->parent;
-            cout << "Mudou para o diretório pai: " << (*current)->name << endl;
-        } else {
-            cout << "Já está no diretório raiz." << endl;
-        }
-        return;
-    } else if (strcmp(path, "/") == 0 || strcmp(path, "root") == 0) {
-        *current = root;
-        cout << "Mudou para o diretório raiz: " << (*current)->name << endl;
-        return;
-    }
-
-    Directory* temp_current;
-    char* path_copy = strdup(path);
-    char* token;
-
-    if (path[0] == '/') {
-        temp_current = root;
-        token = strtok(path_copy + 1, "/");
-    } else {
-        temp_current = *current;
-        token = strtok(path_copy, "/");
-    }
-
-    while (token != NULL) {
-        TreeNode* target_node = btree_search(temp_current->tree, token);
-        if (target_node && target_node->type == DIRECTORY_TYPE) {
-            target_node->data.directory->parent = temp_current;
-            temp_current = target_node->data.directory;
-        } else {
-            cout << "Caminho '" << path << "' inválido ou diretório '" << token << "' não encontrado." << endl;
-            free(path_copy);
-            return;
-        }
-        token = strtok(NULL, "/");
-    }
-
-    *current = temp_current;
-    cout << "Mudou para o diretório: " << (*current)->name << endl;
-    free(path_copy);
-}
-
-void list_directory_contents(Directory* dir) {
-    cout << "Conteúdo do diretório:" << endl;
-    btree_traverse(dir->tree);
-}
-
 TreeNode* btree_search_recursive(BTreeNode* node, const char* name) {
     int i = 0;
     while (i < node->num_keys && strcmp(name, node->keys[i]->name) > 0) {
@@ -215,28 +151,6 @@ TreeNode* btree_search(BTree* tree, const char* name) {
         return NULL;
     }
     return btree_search_recursive(tree->root, name);
-}
-
-void btree_insert(BTree* tree, TreeNode* node) {
-    if (tree->root == NULL) {
-        tree->root = btree_node_create(1);
-        tree->root->keys[0] = node;
-        tree->root->num_keys = 1;
-    } else {
-        if (tree->root->num_keys == 2 * BTREE_ORDER - 1) {
-            BTreeNode* s = btree_node_create(0);
-            s->children[0] = tree->root;
-            btree_split_child(s, 0, tree->root);
-            int i = 0;
-            if (strcmp(node->name, s->keys[0]->name) > 0) {
-                i++;
-            }
-            btree_insert_non_full(s->children[i], node);
-            tree->root = s;
-        } else {
-            btree_insert_non_full(tree->root, node);
-        }
-    }
 }
 
 int find_key_index(BTreeNode* node, const char* name) {
@@ -421,6 +335,92 @@ void btree_delete(BTree* tree, const char* name) {
         }
         free(temp);
     }
+}
+
+void delete_txt_file(BTree* tree, const char* name) {
+    TreeNode* no = btree_search(tree, name);
+    if (no && no->type == FILE_TYPE) {
+        btree_delete(tree, name);
+        free(no->data.file->name);
+        free(no->data.file->content);
+        free(no->data.file);
+        free(no->name);
+        free(no);
+        cout << "Arquivo '" << name << "' deletado com sucesso.\n";
+    } else {
+        cout << "Arquivo '" << name << "' não encontrado ou não é um arquivo.\n";
+    }
+}
+
+void delete_directory(BTree* tree, const char* name) {
+    TreeNode* no = btree_search(tree, name);
+    if (no && no->type == DIRECTORY_TYPE) {
+        if (no->data.directory->tree->root == NULL || no->data.directory->tree->root->num_keys == 0) {
+            btree_delete(tree, name);
+
+            free(no->data.directory->tree);
+            free(no->data.directory);
+            free(no->name);
+            free(no);
+            cout << "Diretório '" << name << "' deletado com sucesso.\n";
+        } else {
+            cout << "Diretório '" << name << "' não está vazio e não pode ser deletado.\n";
+        }
+    } else {
+        cout << "Diretório '" << name << "' não encontrado ou não é um diretório.\n";
+    }
+}
+
+void change_directory(Directory** current, Directory* root, const char* path) {
+    if (strcmp(path, ".") == 0) {
+        return;
+    } else if (strcmp(path, "..") == 0) {
+        if ((*current)->parent != NULL) {
+            *current = (*current)->parent;
+            cout << "Mudou para o diretório pai: " << (*current)->name << endl;
+        } else {
+            cout << "Já está no diretório raiz." << endl;
+        }
+        return;
+    } else if (strcmp(path, "/") == 0 || strcmp(path, "root") == 0) {
+        *current = root;
+        cout << "Mudou para o diretório raiz: " << (*current)->name << endl;
+        return;
+    }
+
+    Directory* temp_current;
+    char* path_copy = strdup(path);
+    char* token;
+
+    if (path[0] == '/') {
+        temp_current = root;
+        token = strtok(path_copy + 1, "/");
+    } else {
+        temp_current = *current;
+        token = strtok(path_copy, "/");
+    }
+
+    while (token != NULL) {
+        TreeNode* target_node = btree_search(temp_current->tree, token);
+        if (target_node && target_node->type == DIRECTORY_TYPE) {
+            target_node->data.directory->parent = temp_current;
+            temp_current = target_node->data.directory;
+        } else {
+            cout << "Caminho '" << path << "' inválido ou diretório '" << token << "' não encontrado." << endl;
+            free(path_copy);
+            return;
+        }
+        token = strtok(NULL, "/");
+    }
+
+    *current = temp_current;
+    cout << "Mudou para o diretório: " << (*current)->name << endl;
+    free(path_copy);
+}
+
+void list_directory_contents(Directory* dir) {
+    cout << "Conteúdo do diretório:" << endl;
+    btree_traverse(dir->tree);
 }
 
 void btree_traverse_recursive(BTreeNode* node) {
