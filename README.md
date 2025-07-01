@@ -7,7 +7,7 @@ Repositório para o trabalho da M3 de SO
 
 #### Compilação
 
-g++ main_fs.cpp -o main_fs
+g++ main_fs.cpp -o main_fs  
 ./main_fs
 
 #### Inserir arquivos
